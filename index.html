@@ -1,0 +1,210 @@
+<!doctype html>
+<html>
+<head>
+    <script src="js/jquery-2.0.3.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var maxSpeed = 5;
+            var mouse = {};
+            var boxHeight = $('#box').height(), boxWidth = $('#box').width();
+            var boxTop = $('#box').position().top, boxLeft = $('#box').position().left;
+            var objects = [];
+            setInterval(function () {
+                $('#objects_cnt').text(objects.length);
+            }, 500);
+
+            var behaviourRandom = function() {
+                var ax = randSign()*Math.random();
+                var ay = randSign()*Math.random();
+                this.vx +=ax; this.vy+=ay;
+            };
+
+
+            var createBehaviourPlay = function(ball) {
+                return function() {
+                    var r = this.getDistTo(ball);
+                    var sign = 1;
+                    if (r < 25) {
+                        sign = -1;
+                    }
+                    var unitAX = sign*(ball.x - this.x)/r;
+                    var unitAY = sign*(ball.y - this.y)/r;
+                    var ax = 500*unitAX/(r*r);
+                    var ay = 500*unitAY/(r*r);
+                    this.vx +=ax; this.vy+=ay;
+                };
+            };
+
+            var mouseActionCreateObj = function(x, y) {
+                if (objects.length < 20) {
+                    objects.push(new Ball(x, y));
+                }
+            };
+
+            var mouseActionAddBread = function(x, y) {
+                new Food(x, y);
+            };
+
+            function main() {
+                var box = $("#box");
+                box.width(boxWidth);
+                box.height(boxHeight);
+                objects.push(new Ball(boxWidth/2, boxHeight/2));
+                $("#box").click(function(e) {
+                     mouse.action(e.pageX - this.offsetLeft, e.pageY - this.offsetTop)
+                });
+                $("#bread").click(function() {
+                    mouse.action = mouseActionAddBread;
+                });
+                mouse.action = mouseActionCreateObj;
+            }
+
+            function randSign() {
+                var rnd;
+                rnd = Math.random();
+                if (rnd < 0.5) return -1;
+                if (rnd == 0.5) return 0;
+                return 1;
+            }
+
+            function Entity(x, y) {
+                x = x || 0;
+                y = y || 0;
+                this.vx = 0;
+                this.vy = 0;
+                this.x = 0;
+                this.y = 0;
+            }
+
+            function Food(x,y) {
+                var objHeight = 10, objWidth = 10;
+                this.initView(objWidth, objHeight);
+                this.moveIt(x, y);
+            }
+            Food.prototype = new Entity(0, 0);
+
+            function Ball(x, y) {
+                var objHeight = 10, objWidth = 10;
+                this.initView(objWidth, objHeight);
+                this.moveIt(x, y);
+                this.mood = behaviourRandom;
+            }
+            Ball.prototype = new Entity(0, 0);
+            Entity.prototype.initView = function(objWidth, objHeight) {
+                this.$ = $('<div></div>');
+                $("#box").append(this.$);
+                this.$.width(objWidth);
+                this.$.height(objHeight);
+                this.$.css('borderRadius', objHeight);
+                this.$.css('position','absolute');
+                this.$.css('background-color', 'blue');
+            };
+            Entity.prototype.moveIt = function(dx, dy) {
+                var newTop = Math.round(this.$.position().top + dy);
+                if (newTop < 0) {
+                    newTop = 0;
+                    this.vy = -0.2 * this.vy;
+                }
+                if (newTop > boxHeight - this.$.height()) {
+                    newTop = boxHeight - this.$.height();
+                    this.vy = -0.2 * this.vy;
+                }
+                this.$.css('top', newTop);
+                var newLeft = Math.round(this.$.position().left + dx);
+                if (newLeft < 0) {
+                    newLeft = 0;
+                    this.vx = -0.2 * this.vx;
+                }
+                if (newLeft > boxWidth - this.$.width()) {
+                    newLeft = boxWidth - this.$.width();
+                    this.vx = -0.2 * this.vx;
+                }
+                this.x = newLeft;
+                this.y = newTop;
+                this.$.css('left', newLeft);
+            };
+            Entity.prototype.updatePos = function() {
+                this._pos = {
+                    top: this.$.css('top'),
+                    left: this.$.css('left'),
+                    size: this.$.css('width')
+                };
+            };
+            Entity.prototype.setSize = function(size) {
+                this.$.css({width: size, height:size, borderRadius:size});
+            };
+            Entity.prototype.isIntersection = function(obj) {
+                //var his = {top: 0, left: 0}, my = {top: 0, left: 0};
+                var his = {top: parseInt(obj.$.css('top')), left: parseInt(obj.$.css('left'))};
+                var my  = {top: parseInt(this.$.css('top')), left: parseInt(this.$.css('left'))};
+                return  (his.top > my.top
+                        && his.top < my.top + this.$.height()
+                        && his.left > my.left
+                        && his.left < my.left + this.$.width());
+            };
+            Entity.prototype.getDistTo = function(obj) {
+                return Math.sqrt(Math.pow(this.x - obj.x, 2) + Math.pow(this.y-obj.y, 2));
+            };
+            Ball.prototype.getClosestObject = function(objects) {
+                var me = this;
+                var minDist = null;
+                var result = null;
+                if (objects.length < 2) {
+                    return null;
+                }
+                objects.forEach(function(el) {
+                    var dist = me.getDistTo(el);
+                    if (dist == 0) {
+                        return;
+                    }
+                    if (minDist == null || minDist > me.getDistTo(el)) {
+                        minDist = dist;
+                        result = el;
+                    }
+                });
+                return {object: result, distance: minDist};
+            };
+
+            setInterval(function() {
+                objects.forEach(function(obj, curObjIndex) {
+                    if (objects.length < 2) {
+                        obj.mood = behaviourRandom;
+                    } else {
+                        var closest = obj.getClosestObject(objects);
+                        if (closest && closest.distance < 300) {
+                            obj.mood = createBehaviourPlay(closest.object);
+                        } else {
+                            obj.mood = behaviourRandom;
+                        }
+                    }
+                    obj.mood();
+                    if (obj.vx > maxSpeed) {
+                        obj.vx = maxSpeed;
+                        obj.ax = 0;
+                    }
+                    if (obj.vy > maxSpeed) {
+                        obj.vy = maxSpeed;
+                        obj.ay = 0;
+                    }
+                    var dx = obj.vx;
+                    var dy = obj.vy;
+                    obj.moveIt(dx, dy);
+                    //obj.grow();
+                    //if (obj.isIntersection(el)) {
+                        //obj.makeLove(el);
+                    //}
+                })
+            }, 40);
+
+            main();
+        })
+    </script>
+</head>
+<body>
+<div style="margin: 10px;">
+    <div id="box" style="margin: 0 auto; border: 2px solid gray; position: relative; width:500px; height:500px;"></div>
+    <div style="margin: 0 auto; text-align: center;">Шариков: <span id="objects_cnt"></span></div>
+    <div style="margin: 0 auto; width: 500px;"><div id="bread" style="background-color: brown; width:10px;height:10px;"></div></div>
+</div>
+</body>
+</html>
