@@ -34,9 +34,9 @@
                 }
             };
             var mouseActionAddBread = function(x, y) {
-                food.append(new Food(x, y));
+                food.push(new Food(x, y));
+                console.log(food);
             };
-
             function main() {
                 var box = $("#box");
                 box.width(boxWidth);
@@ -57,7 +57,6 @@
                 });
                 mouse.action = mouseActionCreateObj;
             }
-
             function randSign() {
                 var rnd;
                 rnd = Math.random();
@@ -74,21 +73,20 @@
                 this.x = 0;
                 this.y = 0;
             }
-
             function Food(x,y) {
                 var objHeight = 10, objWidth = 10;
                 this.initView(objWidth, objHeight);
                 this.moveIt(x, y);
+                this.amount = 100;
             }
             Food.prototype = new Entity(0, 0);
-
+            Ball.prototype = new Entity(0, 0);
             function Ball(x, y) {
                 var objHeight = 10, objWidth = 10;
                 this.initView(objWidth, objHeight);
                 this.moveIt(x, y);
                 this.food = 100;
             }
-            Ball.prototype = new Entity(0, 0);
             Entity.prototype.initView = function(objWidth, objHeight) {
                 this.$ = $('<div></div>');
                 $("#box").append(this.$);
@@ -141,7 +139,7 @@
             Entity.prototype.getDistTo = function(obj) {
                 return Math.sqrt(Math.pow(this.x - obj.x, 2) + Math.pow(this.y-obj.y, 2));
             };
-            Ball.prototype.getClosestObject = function(objects) {
+            Entity.prototype.getClosestObject = function(objects) {
                 var me = this;
                 var minDist = null;
                 var result = null;
@@ -194,21 +192,23 @@
             };
             Ball.prototype.behaveFindFood = function() {
                 var closestFood = this.getClosestObject(food);
-                var sign = 1;
-                if (r < 25) {
-                    sign = -1;
+                if (!closestFood.object) {
+                    return false;
                 }
-                var unitAX = sign*(ball.x - this.x)/r;
-                var unitAY = sign*(ball.y - this.y)/r;
+                var r = closestFood.distance;
+                var partner = closestFood.object;
+                var unitAX = (partner.x - this.x)/r;
+                var unitAY = (partner.y - this.y)/r;
                 var ax = 500*unitAX/(r*r);
                 var ay = 500*unitAY/(r*r);
-                this.vx +=ax; this.vy+=ay;
+                this.applyAcceleration(ax, ay);
+                return true;
             };
             Ball.prototype.behave = function() {
                 var intention = null;
-                //if (!intention && ball.food < 10) {
-                //    var intention = this.behaveFindFood();
-                //}
+                if (!intention && this.food < 10) {
+                    var intention = this.behaveFindFood();
+                }
                 if (!intention) {
                     var intention = this.behavePlay();
                 }
@@ -220,6 +220,20 @@
                 this.$.css('position','absolute');
                 this.$.addClass('bread');
             };
+            Food.prototype.feed = function() {
+                var closestBall = this.getClosestObject(balls);
+                if (!closestBall.object || closestBall.distance > 10) {
+                    return false;
+                }
+                closestBall.object.food += 10;
+                this.amount -= 10;
+                return true;
+            };
+            Food.prototype.destroy = function() {
+                food.splice( $.inArray(this, food), 1 );
+                this.$.remove();
+                delete this;
+            };
 
             setInterval(function() {
                 balls.forEach(function(ball, curObjIndex) {
@@ -228,11 +242,13 @@
                     var dx = ball.vx;
                     var dy = ball.vy;
                     ball.moveIt(dx, dy);
-                    //obj.grow();
-                    //if (obj.isIntersection(el)) {
-                        //obj.makeLove(el);
-                    //}
-                })
+                });
+                food.forEach(function(piece, curFoodIndex) {
+                    piece.feed();
+                    if (piece.amount <= 0) {
+                        piece.destroy();
+                    }
+                });
             }, 40);
 
             main();
