@@ -28,6 +28,18 @@
                 $('#objects_cnt').text(balls.length);
             }, 500);
 
+            var SoundLib = function() {
+                this.sounds = {};
+                var audioElement = document.createElement('audio');
+                audioElement.setAttribute('src', 'chaw.mp3');
+                audioElement.setAttribute('type', 'audio/mpeg');
+                this.sounds.chaw = audioElement;
+            };
+            SoundLib.prototype.play = function(soundName) {
+                this.sounds[soundName].play();
+            };
+            var sounds = new SoundLib();
+
             var mouseActionCreateObj = function(x, y) {
                 if (balls.length < 20) {
                     balls.push(new Ball(x, y));
@@ -197,10 +209,8 @@
                 }
                 var r = closestFood.distance;
                 var partner = closestFood.object;
-                var unitAX = (partner.x - this.x)/r;
-                var unitAY = (partner.y - this.y)/r;
-                var ax = 500*unitAX/(r*r);
-                var ay = 500*unitAY/(r*r);
+                var ax = (partner.x - this.x)/r;
+                var ay = (partner.y - this.y)/r;
                 this.applyAcceleration(ax, ay);
                 return true;
             };
@@ -226,6 +236,7 @@
                     return false;
                 }
                 closestBall.object.food += 10;
+                sounds.play('chaw');
                 this.amount -= 10;
                 return true;
             };
