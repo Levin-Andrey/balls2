@@ -10,3 +10,4 @@ In this game you can:
 
 You can see the demo here: http://balls.op-team.ru/
 
+The previous version of the game is here: http://op-team.ru/flyballs/ (RU only).
