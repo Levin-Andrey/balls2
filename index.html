@@ -40,6 +40,11 @@
                 audioElement.setAttribute('src', 'chaw.mp3?1');
                 audioElement.setAttribute('type', 'audio/mpeg');
                 this.sounds.chaw = audioElement;
+
+                audioElement = document.createElement('audio');
+                audioElement.setAttribute('src', 'pee.mp3?1');
+                audioElement.setAttribute('type', 'audio/mpeg');
+                this.sounds.pee = audioElement;
             };
             SoundLib.prototype.play = function(soundName) {
                 this.sounds[soundName].play();
@@ -53,7 +58,6 @@
             };
             var mouseActionAddBread = function(x, y) {
                 food.push(new Food(x, y));
-                console.log(food);
             };
             function main() {
                 var box = $("#box");
@@ -95,6 +99,7 @@
                 this.initView(objWidth, objHeight);
                 this.moveIt(x, y);
                 this.food = 100;
+                this.pee = 0;
             }
             function Food(x,y) {
                 var objHeight = 10, objWidth = 10;
@@ -226,10 +231,28 @@
                 this.applyAcceleration(ax, ay);
                 return true;
             };
+            Ball.prototype.behavePee = function() {
+                /*var closestFood = this.getClosestObject(food);
+                if (!closestFood.object) {
+                    return false;
+                }
+                var r = closestFood.distance;
+                var partner = closestFood.object;
+                var ax = partner.x - this.x;
+                var ay = partner.y - this.y;
+                this.applyAcceleration(ax, ay);*/
+                production.push(new Production(this.x, this.y));
+                this.pee=-10;
+                sounds.play('pee');
+                return true;
+            };
             Ball.prototype.behave = function() {
                 var intention = null;
                 if (!intention && this.food < 10) {
                     var intention = this.behaveFindFood();
+                }
+                if (!intention && this.pee > 1) {
+                    var intention = this.behavePee();
                 }
                 if (!intention) {
                     var intention = this.behavePlay();
@@ -248,6 +271,7 @@
                     return false;
                 }
                 closestBall.object.food += 10;
+                closestBall.object.pee += 1;
                 sounds.play('chaw');
                 this.amount -= 10;
                 return true;
