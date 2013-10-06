@@ -14,6 +14,11 @@
             width: 10px;
             height: 10px;
         }
+        .production {
+            background-color: yellow;
+            width: 5px;
+            height: 5px;
+        }
     </style>
     <script type="text/javascript">
         $(document).ready(function() {
@@ -24,6 +29,7 @@
             var boxTop = $('#box').position().top, boxLeft = $('#box').position().left;
             var balls = [];
             var food = [];
+            var production = [];
             setInterval(function () {
                 $('#objects_cnt').text(balls.length);
             }, 500);
@@ -31,7 +37,7 @@
             var SoundLib = function() {
                 this.sounds = {};
                 var audioElement = document.createElement('audio');
-                audioElement.setAttribute('src', 'chaw.mp3');
+                audioElement.setAttribute('src', 'chaw.mp3?1');
                 audioElement.setAttribute('type', 'audio/mpeg');
                 this.sounds.chaw = audioElement;
             };
@@ -76,7 +82,6 @@
                 if (rnd == 0.5) return 0;
                 return 1;
             }
-
             function Entity(x, y) {
                 x = x || 0;
                 y = y || 0;
@@ -85,21 +90,28 @@
                 this.x = 0;
                 this.y = 0;
             }
-            function Food(x,y) {
-                var objHeight = 10, objWidth = 10;
-                this.initView(objWidth, objHeight);
-                this.moveIt(x, y);
-                this.amount = 100;
-            }
-            Food.prototype = new Entity(0, 0);
-            Ball.prototype = new Entity(0, 0);
             function Ball(x, y) {
                 var objHeight = 10, objWidth = 10;
                 this.initView(objWidth, objHeight);
                 this.moveIt(x, y);
                 this.food = 100;
             }
-            Entity.prototype.initView = function(objWidth, objHeight) {
+            function Food(x,y) {
+                var objHeight = 10, objWidth = 10;
+                this.initView(objWidth, objHeight);
+                this.moveIt(x, y);
+                this.amount = 100;
+            }
+            function Production(x,y) {
+                var objHeight = 5, objWidth = 5;
+                this.initView(objWidth, objHeight);
+                this.moveIt(x, y);
+                this.amount = 1;
+            }
+            Food.prototype = new Entity(0, 0);
+            Ball.prototype = new Entity(0, 0);
+            Production.prototype = new Entity(0, 0);
+            Entity.prototype.initView = function() {
                 this.$ = $('<div></div>');
                 $("#box").append(this.$);
                 this.$.addClass('ball');
@@ -209,8 +221,8 @@
                 }
                 var r = closestFood.distance;
                 var partner = closestFood.object;
-                var ax = (partner.x - this.x)/r;
-                var ay = (partner.y - this.y)/r;
+                var ax = partner.x - this.x;
+                var ay = partner.y - this.y;
                 this.applyAcceleration(ax, ay);
                 return true;
             };
@@ -224,7 +236,7 @@
                 }
                 this.behaveRandom();
             };
-            Food.prototype.initView = function(objWidth, objHeight) {
+            Food.prototype.initView = function() {
                 this.$ = $('<div></div>');
                 $("#box").append(this.$);
                 this.$.css('position','absolute');
@@ -232,7 +244,7 @@
             };
             Food.prototype.feed = function() {
                 var closestBall = this.getClosestObject(balls);
-                if (!closestBall.object || closestBall.distance > 10) {
+                if (!closestBall.object || closestBall.distance > 5) {
                     return false;
                 }
                 closestBall.object.food += 10;
@@ -245,6 +257,12 @@
                 this.$.remove();
                 delete this;
             };
+            Production.prototype.initView = function() {
+                this.$ = $('<div></div>');
+                $("#box").append(this.$);
+                this.$.css('position','absolute');
+                this.$.addClass('production');
+            }
 
             setInterval(function() {
                 balls.forEach(function(ball, curObjIndex) {
