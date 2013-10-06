@@ -2,59 +2,58 @@
 <html>
 <head>
     <script src="js/jquery-2.0.3.js"></script>
+    <style type="text/css">
+        .ball {
+            border-radius: 5px;
+            background-color: blue;
+            width: 10px;
+            height: 10px;
+        }
+        .bread {
+            background-color: brown;
+            width: 10px;
+            height: 10px;
+        }
+    </style>
     <script type="text/javascript">
         $(document).ready(function() {
             var maxSpeed = 5;
+            var looseSpeedOnCrash = 0.8;
             var mouse = {};
             var boxHeight = $('#box').height(), boxWidth = $('#box').width();
             var boxTop = $('#box').position().top, boxLeft = $('#box').position().left;
-            var objects = [];
+            var balls = [];
+            var food = [];
             setInterval(function () {
-                $('#objects_cnt').text(objects.length);
+                $('#objects_cnt').text(balls.length);
             }, 500);
 
-            var behaviourRandom = function() {
-                var ax = randSign()*Math.random();
-                var ay = randSign()*Math.random();
-                this.vx +=ax; this.vy+=ay;
-            };
-
-
-            var createBehaviourPlay = function(ball) {
-                return function() {
-                    var r = this.getDistTo(ball);
-                    var sign = 1;
-                    if (r < 25) {
-                        sign = -1;
-                    }
-                    var unitAX = sign*(ball.x - this.x)/r;
-                    var unitAY = sign*(ball.y - this.y)/r;
-                    var ax = 500*unitAX/(r*r);
-                    var ay = 500*unitAY/(r*r);
-                    this.vx +=ax; this.vy+=ay;
-                };
-            };
-
             var mouseActionCreateObj = function(x, y) {
-                if (objects.length < 20) {
-                    objects.push(new Ball(x, y));
+                if (balls.length < 20) {
+                    balls.push(new Ball(x, y));
                 }
             };
-
             var mouseActionAddBread = function(x, y) {
-                new Food(x, y);
+                food.append(new Food(x, y));
             };
 
             function main() {
                 var box = $("#box");
                 box.width(boxWidth);
                 box.height(boxHeight);
-                objects.push(new Ball(boxWidth/2, boxHeight/2));
+                balls.push(new Ball(boxWidth/2, boxHeight/2));
                 $("#box").click(function(e) {
-                     mouse.action(e.pageX - this.offsetLeft, e.pageY - this.offsetTop)
+                     mouse.action(e.pageX - this.offsetLeft, e.pageY - this.offsetTop);
+                });
+                $("#menu div").click(function() {
+                    $("#menu div").css("border", 0);
+                    $(this).css("border", "3px solid red");
                 });
                 $("#bread").click(function() {
                     mouse.action = mouseActionAddBread;
+                });
+                $("#ball").click(function() {
+                    mouse.action = mouseActionCreateObj;
                 });
                 mouse.action = mouseActionCreateObj;
             }
@@ -87,37 +86,34 @@
                 var objHeight = 10, objWidth = 10;
                 this.initView(objWidth, objHeight);
                 this.moveIt(x, y);
-                this.mood = behaviourRandom;
+                this.food = 100;
             }
             Ball.prototype = new Entity(0, 0);
             Entity.prototype.initView = function(objWidth, objHeight) {
                 this.$ = $('<div></div>');
                 $("#box").append(this.$);
-                this.$.width(objWidth);
-                this.$.height(objHeight);
-                this.$.css('borderRadius', objHeight);
+                this.$.addClass('ball');
                 this.$.css('position','absolute');
-                this.$.css('background-color', 'blue');
             };
             Entity.prototype.moveIt = function(dx, dy) {
                 var newTop = Math.round(this.$.position().top + dy);
                 if (newTop < 0) {
                     newTop = 0;
-                    this.vy = -0.2 * this.vy;
+                    this.vy = -looseSpeedOnCrash * this.vy;
                 }
                 if (newTop > boxHeight - this.$.height()) {
                     newTop = boxHeight - this.$.height();
-                    this.vy = -0.2 * this.vy;
+                    this.vy = -looseSpeedOnCrash * this.vy;
                 }
                 this.$.css('top', newTop);
                 var newLeft = Math.round(this.$.position().left + dx);
                 if (newLeft < 0) {
                     newLeft = 0;
-                    this.vx = -0.2 * this.vx;
+                    this.vx = -looseSpeedOnCrash * this.vx;
                 }
                 if (newLeft > boxWidth - this.$.width()) {
                     newLeft = boxWidth - this.$.width();
-                    this.vx = -0.2 * this.vx;
+                    this.vx = -looseSpeedOnCrash * this.vx;
                 }
                 this.x = newLeft;
                 this.y = newTop;
@@ -149,9 +145,6 @@
                 var me = this;
                 var minDist = null;
                 var result = null;
-                if (objects.length < 2) {
-                    return null;
-                }
                 objects.forEach(function(el) {
                     var dist = me.getDistTo(el);
                     if (dist == 0) {
@@ -164,31 +157,77 @@
                 });
                 return {object: result, distance: minDist};
             };
+            Ball.prototype.applyAcceleration = function(ax, ay) {
+                var futureSpeed = Math.sqrt(Math.pow(this.vx + ax, 2) + Math.pow(this.vy + ay, 2));
+                var k = 1;
+                if (futureSpeed > maxSpeed) {
+                    var aIn = Math.sqrt(Math.pow(ax, 2) + Math.pow(ay, 2));
+                    var aMax = maxSpeed - Math.sqrt(Math.pow(this.vx, 2) + Math.pow(this.vy, 2));
+                    k = aMax/aIn;
+                }
+                this.vx += k*ax;
+                this.vy += k*ay;
+            }
+            Ball.prototype.behavePlay = function() {
+                var closest = this.getClosestObject(balls);
+                if (!closest.object || closest.distance > 300) {
+                    return false;
+                }
+                var r = closest.distance;
+                var partner = closest.object;
+                var sign = 1;
+                if (r < 25) {
+                    sign = -1;
+                }
+                var unitAX = sign*(partner.x - this.x)/r;
+                var unitAY = sign*(partner.y - this.y)/r;
+                var ax = 500*unitAX/(r*r);
+                var ay = 500*unitAY/(r*r);
+                this.applyAcceleration(ax, ay);
+                return true;
+            };
+            Ball.prototype.behaveRandom = function() {
+                var ax = randSign()*Math.random()/3;
+                var ay = randSign()*Math.random()/3;
+                this.applyAcceleration(ax, ay);
+                return true;
+            };
+            Ball.prototype.behaveFindFood = function() {
+                var closestFood = this.getClosestObject(food);
+                var sign = 1;
+                if (r < 25) {
+                    sign = -1;
+                }
+                var unitAX = sign*(ball.x - this.x)/r;
+                var unitAY = sign*(ball.y - this.y)/r;
+                var ax = 500*unitAX/(r*r);
+                var ay = 500*unitAY/(r*r);
+                this.vx +=ax; this.vy+=ay;
+            };
+            Ball.prototype.behave = function() {
+                var intention = null;
+                //if (!intention && ball.food < 10) {
+                //    var intention = this.behaveFindFood();
+                //}
+                if (!intention) {
+                    var intention = this.behavePlay();
+                }
+                this.behaveRandom();
+            };
+            Food.prototype.initView = function(objWidth, objHeight) {
+                this.$ = $('<div></div>');
+                $("#box").append(this.$);
+                this.$.css('position','absolute');
+                this.$.addClass('bread');
+            };
 
             setInterval(function() {
-                objects.forEach(function(obj, curObjIndex) {
-                    if (objects.length < 2) {
-                        obj.mood = behaviourRandom;
-                    } else {
-                        var closest = obj.getClosestObject(objects);
-                        if (closest && closest.distance < 300) {
-                            obj.mood = createBehaviourPlay(closest.object);
-                        } else {
-                            obj.mood = behaviourRandom;
-                        }
-                    }
-                    obj.mood();
-                    if (obj.vx > maxSpeed) {
-                        obj.vx = maxSpeed;
-                        obj.ax = 0;
-                    }
-                    if (obj.vy > maxSpeed) {
-                        obj.vy = maxSpeed;
-                        obj.ay = 0;
-                    }
-                    var dx = obj.vx;
-                    var dy = obj.vy;
-                    obj.moveIt(dx, dy);
+                balls.forEach(function(ball, curObjIndex) {
+                    ball.food--;
+                    ball.behave();
+                    var dx = ball.vx;
+                    var dy = ball.vy;
+                    ball.moveIt(dx, dy);
                     //obj.grow();
                     //if (obj.isIntersection(el)) {
                         //obj.makeLove(el);
@@ -204,7 +243,10 @@
 <div style="margin: 10px;">
     <div id="box" style="margin: 0 auto; border: 2px solid gray; position: relative; width:500px; height:500px;"></div>
     <div style="margin: 0 auto; text-align: center;">Шариков: <span id="objects_cnt"></span></div>
-    <div style="margin: 0 auto; width: 500px;"><div id="bread" style="background-color: brown; width:10px;height:10px;"></div></div>
+    <div id="menu" style="margin: 0 auto; width: 500px;">
+        <div id="bread" class="bread" style="float:left; margin:2px;"></div>
+        <div id="ball" class="ball" style="float:left; margin:2px;"></div>
+    </div>
 </div>
 </body>
 </html>
