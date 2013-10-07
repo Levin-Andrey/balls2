@@ -6,17 +6,20 @@
         .ball {
             border-radius: 5px;
             background-color: blue;
+            z-index: 3;
             width: 10px;
             height: 10px;
         }
         .bread {
             background-color: brown;
             width: 10px;
+            z-index: 2;
             height: 10px;
         }
         .production {
             background-color: yellow;
             width: 5px;
+            z-index: 1;
             height: 5px;
         }
     </style>
@@ -98,7 +101,7 @@
                 var objHeight = 10, objWidth = 10;
                 this.initView(objWidth, objHeight);
                 this.moveIt(x, y);
-                this.food = 100;
+                this.food = 0;
                 this.pee = 0;
             }
             function Food(x,y) {
@@ -242,20 +245,28 @@
                 var ay = partner.y - this.y;
                 this.applyAcceleration(ax, ay);*/
                 production.push(new Production(this.x, this.y));
-                this.pee=-10;
+                if (this.pee - 10 > 0) {
+                    this.pee = 0;
+                } else {
+                    this.pee=-10;
+                }
                 sounds.play('pee');
                 return true;
             };
             Ball.prototype.behave = function() {
                 var intention = null;
-                if (!intention && this.food < 10) {
-                    var intention = this.behaveFindFood();
+                if (this.food > 0) {
+                    this.pee++;
+                    this.food--;
                 }
-                if (!intention && this.pee > 1) {
-                    var intention = this.behavePee();
+                if (!intention && this.food < 10) {
+                    intention = this.behaveFindFood();
+                }
+                if (!intention && this.pee > 20) {
+                    intention = this.behavePee();
                 }
                 if (!intention) {
-                    var intention = this.behavePlay();
+                    intention = this.behavePlay();
                 }
                 this.behaveRandom();
             };
@@ -271,7 +282,6 @@
                     return false;
                 }
                 closestBall.object.food += 10;
-                closestBall.object.pee += 1;
                 sounds.play('chaw');
                 this.amount -= 10;
                 return true;
@@ -290,7 +300,6 @@
 
             setInterval(function() {
                 balls.forEach(function(ball, curObjIndex) {
-                    ball.food--;
                     ball.behave();
                     var dx = ball.vx;
                     var dy = ball.vy;
