@@ -37,10 +37,12 @@
         $(document).ready(function() {
             var maxSpeed = 5;
             var looseSpeedOnCrash = 0.8;
-            var ballPrice = 10;
-            var breadPrice = 5;
-            var productionProfit = 30;
+            var ballPrice = 20;
+            var breadPrice = 10;
+            var productionProfit = 20;
             var playerMoney = 100;
+            var breadAmount = 100;
+            var foodAmountToProduct = 90;
             var mouse = {};
             var boxHeight = $('#box').height(), boxWidth = $('#box').width();
             var boxTop = $('#box').position().top, boxLeft = $('#box').position().left;
@@ -76,7 +78,7 @@
                 e.stopPropagation();
             });
             var mouseActionCreateBall = function(x, y) {
-                if (balls.length < 20 && playerMoney >= ballPrice) {
+                if (playerMoney >= ballPrice) {
                     playerMoney -= ballPrice;
                     balls.push(new Ball(x, y));
                 }
@@ -139,7 +141,7 @@
                 var objHeight = 10, objWidth = 10;
                 this.initView(objWidth, objHeight);
                 this.moveIt(x, y);
-                this.amount = 100;
+                this.amount = breadAmount;
             }
             function Production(x,y) {
                 var objHeight = 5, objWidth = 5;
@@ -267,11 +269,14 @@
                 return true;
             };
             Ball.prototype.behaveProduct = function() {
+                if (this.producted < foodAmountToProduct) {
+                    return false;
+                }
                 production.push(new Production(this.x, this.y));
-                if (this.producted - 10 > 0) {
+                if (this.producted - foodAmountToProduct < 0) {
                     this.producted = 0;
                 } else {
-                    this.producted=-90;
+                    this.producted =- foodAmountToProduct;
                 }
                 sounds.play('producted');
                 return true;
@@ -281,7 +286,7 @@
                 if (!intention && this.food < 10) {
                     intention = this.behaveFindFood();
                 }
-                if (!intention && this.producted > 100) {
+                if (!intention) {
                     intention = this.behaveProduct();
                 }
                 if (!intention) {
