@@ -9,33 +9,43 @@
             z-index: 3;
             width: 10px;
             height: 10px;
+            z-index: 3;
         }
         .bread {
             background-color: brown;
             width: 10px;
             z-index: 2;
             height: 10px;
+            z-index: 2;
         }
         .production {
-            background-color: yellow;
-            width: 5px;
+            background-image:url('production.png');
+            width: 10px;
             z-index: 1;
-            height: 5px;
+            height: 10px;
+            z-index: 1;
+            cursor: pointer;
+        }
+        #menu > div {
+            cursor: pointer;
+        }
+        #menu > div.active {
+            border:3px solid red;
         }
     </style>
     <script type="text/javascript">
         $(document).ready(function() {
             var maxSpeed = 5;
             var looseSpeedOnCrash = 0.8;
+            var ballPrice = 10;
+            var breadPrice = 5;
+            var playerMoney = 100;
             var mouse = {};
             var boxHeight = $('#box').height(), boxWidth = $('#box').width();
             var boxTop = $('#box').position().top, boxLeft = $('#box').position().left;
             var balls = [];
             var food = [];
             var production = [];
-            setInterval(function () {
-                $('#objects_cnt').text(balls.length);
-            }, 500);
 
             var SoundLib = function() {
                 this.sounds = {};
@@ -45,24 +55,30 @@
                 this.sounds.chaw = audioElement;
 
                 audioElement = document.createElement('audio');
-                audioElement.setAttribute('src', 'pee.mp3?1');
+                audioElement.setAttribute('src', 'producted.mp3?1');
                 audioElement.setAttribute('type', 'audio/mpeg');
-                this.sounds.pee = audioElement;
+                this.sounds.producted = audioElement;
             };
             SoundLib.prototype.play = function(soundName) {
                 this.sounds[soundName].play();
             };
             var sounds = new SoundLib();
 
-            var mouseActionCreateObj = function(x, y) {
-                if (balls.length < 20) {
+            var mouseActionCreateBall = function(x, y) {
+                if (balls.length < 20 && playerMoney >= ballPrice) {
+                    playerMoney -= ballPrice;
                     balls.push(new Ball(x, y));
                 }
             };
             var mouseActionAddBread = function(x, y) {
-                food.push(new Food(x, y));
+                if (playerMoney >= breadPrice) {
+                    playerMoney -= breadPrice;
+                    food.push(new Food(x, y));
+                }
             };
             function main() {
+                $("#breadPrice").text('$' + breadPrice);
+                $("#ballPrice").text('$' + ballPrice);
                 var box = $("#box");
                 box.width(boxWidth);
                 box.height(boxHeight);
@@ -71,16 +87,16 @@
                      mouse.action(e.pageX - this.offsetLeft, e.pageY - this.offsetTop);
                 });
                 $("#menu div").click(function() {
-                    $("#menu div").css("border", 0);
-                    $(this).css("border", "3px solid red");
+                    $("#menu div").removeClass("active");
+                    $(this).addClass("active");
                 });
                 $("#bread").click(function() {
                     mouse.action = mouseActionAddBread;
                 });
                 $("#ball").click(function() {
-                    mouse.action = mouseActionCreateObj;
+                    mouse.action = mouseActionCreateBall;
                 });
-                mouse.action = mouseActionCreateObj;
+                mouse.action = mouseActionCreateBall;
             }
             function randSign() {
                 var rnd;
@@ -102,7 +118,7 @@
                 this.initView(objWidth, objHeight);
                 this.moveIt(x, y);
                 this.food = 0;
-                this.pee = 0;
+                this.producted = 0;
                 this.amount = 100;
                 this.isAgressive = false;
             }
@@ -151,24 +167,12 @@
                 this.y = newTop;
                 this.$.css('left', newLeft);
             };
-            Entity.prototype.updatePos = function() {
-                this._pos = {
-                    top: this.$.css('top'),
-                    left: this.$.css('left'),
-                    size: this.$.css('width')
-                };
-            };
-            Entity.prototype.setSize = function(size) {
-                this.$.css({width: size, height:size, borderRadius:size});
-            };
-            Entity.prototype.isIntersection = function(obj) {
-                //var his = {top: 0, left: 0}, my = {top: 0, left: 0};
-                var his = {top: parseInt(obj.$.css('top')), left: parseInt(obj.$.css('left'))};
-                var my  = {top: parseInt(this.$.css('top')), left: parseInt(this.$.css('left'))};
-                return  (his.top > my.top
-                        && his.top < my.top + this.$.height()
-                        && his.left > my.left
-                        && his.left < my.left + this.$.width());
+            Entity.prototype.findIntersected = function(objects) {
+                var found = this.getClosestObject(objects);
+                if (found.object && this.$.width()/2 + found.object.$.width()/2 > found.distance) {
+                    return found.object;
+                }
+                return null;
             };
             Entity.prototype.getDistTo = function(obj) {
                 return Math.sqrt(Math.pow(this.x - obj.x, 2) + Math.pow(this.y-obj.y, 2));
@@ -244,14 +248,14 @@
                 this.applyAcceleration(ax, ay);
                 return true;
             };
-            Ball.prototype.behavePee = function() {
+            Ball.prototype.behaveProduct = function() {
                 production.push(new Production(this.x, this.y));
-                if (this.pee - 10 > 0) {
-                    this.pee = 0;
+                if (this.producted - 10 > 0) {
+                    this.producted = 0;
                 } else {
-                    this.pee=-90;
+                    this.producted=-90;
                 }
-                sounds.play('pee');
+                sounds.play('producted');
                 return true;
             };
             Ball.prototype.behave = function() {
@@ -259,8 +263,8 @@
                 if (!intention && this.food < 10) {
                     intention = this.behaveFindFood();
                 }
-                if (!intention && this.pee > 100) {
-                    intention = this.behavePee();
+                if (!intention && this.producted > 100) {
+                    intention = this.behaveProduct();
                 }
                 if (!intention) {
                     intention = this.behavePlay();
@@ -269,17 +273,17 @@
             };
             Ball.prototype.consumeFood = function() {
                 if (this.food > 0) {
-                    this.pee++;
+                    this.producted++;
                     this.food--;
                 }
             };
             Ball.prototype.feed = function() {
-                var closestBall = this.getClosestObject(balls);
-                if (!closestBall.object || closestBall.distance > 10 || !closestBall.object.isAgressive) {
+                var closestBall = this.findIntersected(balls);
+                if (!closestBall || !closestBall.isAgressive) {
                     return false;
                 }
-                closestBall.object.food += 100;
-                closestBall.object.$.css("background", "blue");
+                closestBall.food += 100;
+                closestBall.$.css("background", "blue");
                 sounds.play('chaw');
                 this.amount -= 100;
                 return true;
@@ -296,11 +300,11 @@
                 this.$.addClass('bread');
             };
             Food.prototype.feed = function() {
-                var closestBall = this.getClosestObject(balls);
-                if (!closestBall.object || closestBall.distance > 10) {
+                var intersectedObj = this.findIntersected(balls);
+                if (!intersectedObj) {
                     return false;
                 }
-                closestBall.object.food += 10;
+                intersectedObj.food += 10;
                 sounds.play('chaw');
                 this.amount -= 10;
                 return true;
@@ -316,7 +320,7 @@
                 this.$.css('position','absolute');
                 this.$.addClass('production');
             }
-
+            //main cycle
             setInterval(function() {
                 balls.forEach(function(ball, curObjIndex) {
                     ball.behave();
@@ -337,13 +341,17 @@
                     }
                 });
             }, 40);
-
+            //waste food
             setInterval(function() {
                 balls.forEach(function(ball, curObjIndex) {
                     ball.consumeFood();
                 });
             }, 100);
-
+            //update info
+            setInterval(function () {
+                $('#objects_cnt').text(balls.length);
+                $('#money').text('$' + playerMoney);
+            }, 500);
             main();
         })
     </script>
@@ -351,10 +359,19 @@
 <body>
 <div style="margin: 10px;">
     <div id="box" style="margin: 0 auto; border: 2px solid gray; position: relative; width:500px; height:500px;"></div>
-    <div style="margin: 0 auto; text-align: center;">Balls: <span id="objects_cnt"></span></div>
+    <div style="margin: 0 auto; text-align: center;" id="info">
+        Balls: <span id="objects_cnt"></span><br />
+        Ballance: <span id="money"></span>
+    </div>
     <div id="menu" style="margin: 0 auto; width: 500px;">
-        <div id="bread" class="bread" style="float:left; margin:2px;"></div>
-        <div id="ball" class="ball" style="float:left; margin:2px;"></div>
+        <div id="bread">
+            <span id="breadPrice"></span>
+            <div class="bread" style="float:left; margin:2px;"></div>
+        </div>
+        <div id="ball" class="active">
+            <span id="ballPrice"></span>
+            <div class="ball" style="float:left; margin:2px;"></div>
+        </div>
     </div>
 </div>
 </body>
