@@ -39,6 +39,7 @@
             var looseSpeedOnCrash = 0.8;
             var ballPrice = 10;
             var breadPrice = 5;
+            var productionProfit = 30;
             var playerMoney = 100;
             var mouse = {};
             var boxHeight = $('#box').height(), boxWidth = $('#box').width();
@@ -64,6 +65,16 @@
             };
             var sounds = new SoundLib();
 
+            $("#box").on("click", "div.production", function(e) {
+                var me = $(this);
+                console.log(me, production);
+                production.forEach(function(el){
+                    if (me.is(el.$)) {
+                        el.transmit();
+                    }
+                });
+                e.stopPropagation();
+            });
             var mouseActionCreateBall = function(x, y) {
                 if (balls.length < 20 && playerMoney >= ballPrice) {
                     playerMoney -= ballPrice;
@@ -84,7 +95,8 @@
                 box.height(boxHeight);
                 balls.push(new Ball(boxWidth/2, boxHeight/2));
                 $("#box").click(function(e) {
-                     mouse.action(e.pageX - this.offsetLeft, e.pageY - this.offsetTop);
+                    mouse.action(e.pageX - this.offsetLeft, e.pageY - this.offsetTop);
+                    return false;
                 });
                 $("#menu div").click(function() {
                     $("#menu div").removeClass("active");
@@ -105,13 +117,14 @@
                 if (rnd == 0.5) return 0;
                 return 1;
             }
-            function Entity(x, y) {
+            function Entity(x, y, arr) {
                 x = x || 0;
                 y = y || 0;
                 this.vx = 0;
                 this.vy = 0;
                 this.x = 0;
                 this.y = 0;
+                this.classArray = arr;
             }
             function Ball(x, y) {
                 var objHeight = 10, objWidth = 10;
@@ -134,14 +147,19 @@
                 this.moveIt(x, y);
                 this.amount = 1;
             }
-            Food.prototype = new Entity(0, 0);
-            Ball.prototype = new Entity(0, 0);
-            Production.prototype = new Entity(0, 0);
+            Food.prototype = new Entity(0, 0, food);
+            Ball.prototype = new Entity(0, 0, balls);
+            Production.prototype = new Entity(0, 0, production);
             Entity.prototype.initView = function() {
                 this.$ = $('<div></div>');
                 $("#box").append(this.$);
                 this.$.addClass('ball');
                 this.$.css('position','absolute');
+            };
+            Entity.prototype.destroy = function() {
+                this.classArray.splice( $.inArray(this, this.classArray), 1 );
+                this.$.remove();
+                delete this;
             };
             Entity.prototype.moveIt = function(dx, dy) {
                 var newTop = Math.round(this.$.position().top + dy);
@@ -288,11 +306,6 @@
                 this.amount -= 100;
                 return true;
             };
-            Ball.prototype.destroy = function() {
-                this.$.remove();
-                balls.splice( $.inArray(this, balls), 1 );
-                delete this;
-            };
             Food.prototype.initView = function() {
                 this.$ = $('<div></div>');
                 $("#box").append(this.$);
@@ -309,17 +322,16 @@
                 this.amount -= 10;
                 return true;
             };
-            Food.prototype.destroy = function() {
-                food.splice( $.inArray(this, food), 1 );
-                this.$.remove();
-                delete this;
-            };
             Production.prototype.initView = function() {
                 this.$ = $('<div></div>');
                 $("#box").append(this.$);
                 this.$.css('position','absolute');
                 this.$.addClass('production');
-            }
+            };
+            Production.prototype.transmit = function() {
+                playerMoney += productionProfit;
+                this.destroy();
+            };
             //main cycle
             setInterval(function() {
                 balls.forEach(function(ball, curObjIndex) {
