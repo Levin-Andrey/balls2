@@ -35,6 +35,7 @@
     </style>
     <script type="text/javascript">
         $(document).ready(function() {
+            var soundOn = true;
             var maxSpeed = 5;
             var looseSpeedOnCrash = 0.8;
             var ballPrice = 20;
@@ -63,7 +64,9 @@
                 this.sounds.producted = audioElement;
             };
             SoundLib.prototype.play = function(soundName) {
-                this.sounds[soundName].play();
+                if (soundOn) {
+                    this.sounds[soundName].play();
+                }
             };
             var sounds = new SoundLib();
 
@@ -109,6 +112,15 @@
                 });
                 $("#ball").click(function() {
                     mouse.action = mouseActionCreateBall;
+                });
+                $("#sound").click(function(){
+                    if (soundOn) {
+                        soundOn = false;
+                        $(this).text("off");
+                    } else {
+                        soundOn = true;
+                        $(this).text("on");
+                    }
                 });
                 mouse.action = mouseActionCreateBall;
             }
@@ -390,6 +402,7 @@
             <div class="ball" style="float:left; margin:2px;"></div>
         </div>
     </div>
+    <div style="margin:0 auto; width:500px; text-align: right;">Sound: <a id="sound" href="#">on</a></div>
 </div>
 </body>
 </html>
