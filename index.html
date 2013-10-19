@@ -3,19 +3,28 @@
 <head>
     <script src="js/jquery-2.0.3.js"></script>
     <style type="text/css">
-        .ball {
-            border-radius: 5px;
-            background-color: blue;
+        .bee {
+            background-image:url('bee_left.gif');
             z-index: 3;
-            width: 10px;
-            height: 10px;
+            width: 20px;
+            height: 20px;
             z-index: 3;
         }
-        .bread {
-            background-color: brown;
-            width: 10px;
+        .flower {
+            background-image:url('flower_0.png');
+            width: 30px;
             z-index: 2;
-            height: 10px;
+            height: 30px;
+            z-index: 2;
+        }
+        .flower-half {
+            background-image:url('flower_1.png');
+        }
+        .flower-third {
+            background-image:url('flower_2.png');
+            width: 19px;
+            z-index: 2;
+            height: 19px;
             z-index: 2;
         }
         .production {
@@ -39,17 +48,17 @@
             var isPause = false;
             var maxSpeed = 5;
             var looseSpeedOnCrash = 0.8;
-            var ballPrice = 20;
-            var breadPrice = 10;
+            var beePrice = 20;
+            var flowerPrice = 10;
             var productionProfit = 20;
             var playerMoney = 100;
-            var breadAmount = 100;
+            var flowerAmount = 100;
             var foodAmountToProduct = 90;
             var mouse = {};
             var boxHeight = $('#box').height(), boxWidth = $('#box').width();
             var boxTop = $('#box').position().top, boxLeft = $('#box').position().left;
-            var balls = [];
-            var food = [];
+            var bees = [];
+            var flowers = [];
             var production = [];
 
             var SoundLib = function() {
@@ -81,25 +90,25 @@
                 });
                 e.stopPropagation();
             });
-            var mouseActionCreateBall = function(x, y) {
-                if (playerMoney >= ballPrice) {
-                    playerMoney -= ballPrice;
-                    balls.push(new Ball(x, y));
+            var mouseActionCreateBee = function(x, y) {
+                if (playerMoney >= beePrice) {
+                    playerMoney -= beePrice;
+                    bees.push(new Bee(x, y));
                 }
             };
-            var mouseActionAddBread = function(x, y) {
-                if (playerMoney >= breadPrice) {
-                    playerMoney -= breadPrice;
-                    food.push(new Food(x, y));
+            var mouseActionAddflower = function(x, y) {
+                if (playerMoney >= flowerPrice) {
+                    playerMoney -= flowerPrice;
+                    flowers.push(new Flower(x, y));
                 }
             };
             function main() {
-                $("#breadPrice").text('$' + breadPrice);
-                $("#ballPrice").text('$' + ballPrice);
+                $("#flowerPrice").text('$' + flowerPrice);
+                $("#beePrice").text('$' + beePrice);
                 var box = $("#box");
                 box.width(boxWidth);
                 box.height(boxHeight);
-                balls.push(new Ball(boxWidth/2, boxHeight/2));
+                bees.push(new Bee(boxWidth/2, boxHeight/2));
                 $("#box").click(function(e) {
                     mouse.action(e.pageX - this.offsetLeft, e.pageY - this.offsetTop);
                     return false;
@@ -108,11 +117,11 @@
                     $("#menu div").removeClass("active");
                     $(this).addClass("active");
                 });
-                $("#bread").click(function() {
-                    mouse.action = mouseActionAddBread;
+                $("#flower").click(function() {
+                    mouse.action = mouseActionAddflower;
                 });
-                $("#ball").click(function() {
-                    mouse.action = mouseActionCreateBall;
+                $("#bee").click(function() {
+                    mouse.action = mouseActionCreateBee;
                 });
                 $("#sound").click(function(){
                     if (soundOn) {
@@ -132,7 +141,7 @@
                         $(this).text("on");
                     }
                 });
-                mouse.action = mouseActionCreateBall;
+                mouse.action = mouseActionCreateBee;
             }
             function randSign() {
                 var rnd;
@@ -150,20 +159,21 @@
                 this.y = 0;
                 this.classArray = arr;
             }
-            function Ball(x, y) {
+            function Bee(x, y) {
                 var objHeight = 10, objWidth = 10;
                 this.initView(objWidth, objHeight);
                 this.moveIt(x, y);
+                this.direction = "right";
                 this.food = 0;
                 this.producted = 0;
                 this.amount = 100;
                 this.isAgressive = false;
             }
-            function Food(x,y) {
+            function Flower(x,y) {
                 var objHeight = 10, objWidth = 10;
                 this.initView(objWidth, objHeight);
                 this.moveIt(x, y);
-                this.amount = breadAmount;
+                this.amount = flowerAmount;
             }
             function Production(x,y) {
                 var objHeight = 5, objWidth = 5;
@@ -171,13 +181,13 @@
                 this.moveIt(x, y);
                 this.amount = 1;
             }
-            Food.prototype = new Entity(0, 0, food);
-            Ball.prototype = new Entity(0, 0, balls);
+            Flower.prototype = new Entity(0, 0, flowers);
+            Bee.prototype = new Entity(0, 0, bees);
             Production.prototype = new Entity(0, 0, production);
             Entity.prototype.initView = function() {
                 this.$ = $('<div></div>');
                 $("#box").append(this.$);
-                this.$.addClass('ball');
+                this.$.addClass('bee');
                 this.$.css('position','absolute');
             };
             Entity.prototype.destroy = function() {
@@ -235,7 +245,7 @@
                 });
                 return {object: result, distance: minDist};
             };
-            Ball.prototype.applyAcceleration = function(ax, ay) {
+            Bee.prototype.applyAcceleration = function(ax, ay) {
                 var futureSpeed = Math.sqrt(Math.pow(this.vx + ax, 2) + Math.pow(this.vy + ay, 2));
                 var k = 1;
                 if (futureSpeed > maxSpeed) {
@@ -246,8 +256,8 @@
                 this.vx += k*ax;
                 this.vy += k*ay;
             }
-            Ball.prototype.behavePlay = function() {
-                var closest = this.getClosestObject(balls);
+            Bee.prototype.behavePlay = function() {
+                var closest = this.getClosestObject(bees);
                 if (!closest.object || closest.distance > 300) {
                     return false;
                 }
@@ -264,18 +274,18 @@
                 this.applyAcceleration(ax, ay);
                 return true;
             };
-            Ball.prototype.behaveRandom = function() {
+            Bee.prototype.behaveRandom = function() {
                 var ax = randSign()*Math.random()/3;
                 var ay = randSign()*Math.random()/3;
                 this.applyAcceleration(ax, ay);
                 return true;
             };
-            Ball.prototype.behaveFindFood = function() {
-                var closestFood = this.getClosestObject(food);
+            Bee.prototype.behaveFindFood = function() {
+                var closestFood = this.getClosestObject(flowers);
                 var color = "blue";
                 this.isAgressive = false;
                 if (!closestFood.object) {
-                    closestFood = this.getClosestObject(balls);
+                    closestFood = this.getClosestObject(bees);
                     if (closestFood.object) {
                         color = "red";
                         this.isAgressive = true;
@@ -283,14 +293,14 @@
                         return false;
                     }
                 }
-                this.$.css("background", color);
+                //this.$.css("background", color);
                 var partner = closestFood.object;
                 var ax = partner.x - this.x;
                 var ay = partner.y - this.y;
                 this.applyAcceleration(ax, ay);
                 return true;
             };
-            Ball.prototype.behaveProduct = function() {
+            Bee.prototype.behaveProduct = function() {
                 if (this.producted < foodAmountToProduct) {
                     return false;
                 }
@@ -303,7 +313,7 @@
                 sounds.play('producted');
                 return true;
             };
-            Ball.prototype.behave = function() {
+            Bee.prototype.behave = function() {
                 var intention = null;
                 if (!intention && this.food < 10) {
                     intention = this.behaveFindFood();
@@ -316,37 +326,58 @@
                 }
                 this.behaveRandom();
             };
-            Ball.prototype.consumeFood = function() {
+            Bee.prototype.consumeFood = function() {
                 if (this.food > 0) {
                     this.producted++;
                     this.food--;
                 }
             };
-            Ball.prototype.feed = function() {
-                var closestBall = this.findIntersected(balls);
-                if (!closestBall || !closestBall.isAgressive) {
+            Bee.prototype.feed = function() {
+                var closestBee = this.findIntersected(bees);
+                if (!closestBee || !closestBee.isAgressive) {
                     return false;
                 }
-                closestBall.food += 100;
-                closestBall.$.css("background", "blue");
+                closestBee.food += 100;
                 sounds.play('chaw');
                 this.amount -= 100;
                 return true;
             };
-            Food.prototype.initView = function() {
+            Bee.prototype.updateAnimation = function() {
+                if (this.vx > 0.3 && this.vx > this.vy + 0.3) {
+                    this.direction = "right";
+                }
+                if (this.vx < -0.3 && this.vx > this.vy + 0.3) {
+                    this.direction = "left";
+                }
+                if (this.vy > 0.3 && this.vx + 0.3 < this.vy) {
+                    this.direction = "down";
+                }
+                if (this.vy < -0.3 && this.vx + 0.3 < this.vy) {
+                    this.direction = "up";
+                }
+                this.$.css("background-image", "url('bee_" + this.direction + ".gif')");
+            };
+            Flower.prototype.initView = function() {
                 this.$ = $('<div></div>');
                 $("#box").append(this.$);
                 this.$.css('position','absolute');
-                this.$.addClass('bread');
+                this.$.addClass('flower');
             };
-            Food.prototype.feed = function() {
-                var intersectedObj = this.findIntersected(balls);
+            Flower.prototype.feed = function() {
+                var intersectedObj = this.findIntersected(bees);
                 if (!intersectedObj) {
                     return false;
                 }
                 intersectedObj.food += 10;
                 sounds.play('chaw');
                 this.amount -= 10;
+                if (this.amount < flowerAmount*2/2) {
+                    if (this.amount > flowerAmount/3) {
+                        this.$.addClass("flower-half");
+                    } else {
+                        this.$.addClass("flower-third");
+                    }
+                }
                 return true;
             };
             Production.prototype.initView = function() {
@@ -364,22 +395,23 @@
                 if (isPause) {
                     return;
                 }
-                balls.forEach(function(ball, curObjIndex) {
-                    ball.behave();
-                    var dx = ball.vx;
-                    var dy = ball.vy;
-                    ball.moveIt(dx, dy);
+                bees.forEach(function(bee, curObjIndex) {
+                    bee.behave();
+                    var dx = bee.vx;
+                    var dy = bee.vy;
+                    bee.updateAnimation();
+                    bee.moveIt(dx, dy);
                 });
-                food.forEach(function(piece, curFoodIndex) {
+                flowers.forEach(function(piece, curFoodIndex) {
                     piece.feed();
                     if (piece.amount <= 0) {
                         piece.destroy();
                     }
                 });
-                balls.forEach(function(ball, curObjIndex) {
-                    ball.feed();
-                    if (ball.amount <= 0) {
-                        ball.destroy();
+                bees.forEach(function(bee, curObjIndex) {
+                    bee.feed();
+                    if (bee.amount <= 0) {
+                        bee.destroy();
                     }
                 });
             }, 40);
@@ -388,8 +420,8 @@
                 if (isPause) {
                     return;
                 }
-                balls.forEach(function(ball, curObjIndex) {
-                    ball.consumeFood();
+                bees.forEach(function(bee, curObjIndex) {
+                    bee.consumeFood();
                 });
             }, 100);
             //update info
@@ -397,7 +429,7 @@
                 if (isPause) {
                     return;
                 }
-                $('#objects_cnt').text(balls.length);
+                $('#objects_cnt').text(bees.length);
                 $('#money').text('$' + playerMoney);
             }, 500);
             main();
@@ -405,20 +437,30 @@
     </script>
 </head>
 <body>
+<div id="imagesPreload" style="display: none; visibility: hidden;">
+    <img src="bee_right.gif"/>
+    <img src="bee_left.gif"/>
+    <img src="bee_up.gif"/>
+    <img src="bee_down.gif"/>
+    <img src="flower_0.png"/>
+    <img src="flower_1.png"/>
+    <img src="flower_2.png"/>
+    <img src="production.png"/>
+</div>
 <div style="margin: 10px;">
     <div id="box" style="margin: 0 auto; border: 2px solid gray; position: relative; width:500px; height:500px;"></div>
     <div style="margin: 0 auto; text-align: center;" id="info">
-        Balls: <span id="objects_cnt"></span><br />
-        Ballance: <span id="money"></span>
+        Bees: <span id="objects_cnt"></span><br />
+        Beeance: <span id="money"></span>
     </div>
     <div id="menu" style="margin: 0 auto; width: 500px;">
-        <div id="bread">
-            <span id="breadPrice"></span>
-            <div class="bread" style="float:left; margin:2px;"></div>
+        <div id="flower">
+            <span id="flowerPrice"></span>
+            <div class="flower" style="float:left; margin:2px;"></div>
         </div>
-        <div id="ball" class="active">
-            <span id="ballPrice"></span>
-            <div class="ball" style="float:left; margin:2px;"></div>
+        <div id="bee" class="active">
+            <span id="beePrice"></span>
+            <div class="bee" style="float:left; margin:2px;"></div>
         </div>
     </div>
     <div style="margin:0 auto; width:500px; text-align: right;">
