@@ -36,6 +36,7 @@
     <script type="text/javascript">
         $(document).ready(function() {
             var soundOn = true;
+            var isPause = false;
             var maxSpeed = 5;
             var looseSpeedOnCrash = 0.8;
             var ballPrice = 20;
@@ -119,6 +120,15 @@
                         $(this).text("off");
                     } else {
                         soundOn = true;
+                        $(this).text("on");
+                    }
+                });
+                $("#pause").click(function(){
+                    if (isPause) {
+                        isPause = false;
+                        $(this).text("off");
+                    } else {
+                        isPause = true;
                         $(this).text("on");
                     }
                 });
@@ -351,6 +361,9 @@
             };
             //main cycle
             setInterval(function() {
+                if (isPause) {
+                    return;
+                }
                 balls.forEach(function(ball, curObjIndex) {
                     ball.behave();
                     var dx = ball.vx;
@@ -372,12 +385,18 @@
             }, 40);
             //waste food
             setInterval(function() {
+                if (isPause) {
+                    return;
+                }
                 balls.forEach(function(ball, curObjIndex) {
                     ball.consumeFood();
                 });
             }, 100);
             //update info
             setInterval(function () {
+                if (isPause) {
+                    return;
+                }
                 $('#objects_cnt').text(balls.length);
                 $('#money').text('$' + playerMoney);
             }, 500);
@@ -402,7 +421,10 @@
             <div class="ball" style="float:left; margin:2px;"></div>
         </div>
     </div>
-    <div style="margin:0 auto; width:500px; text-align: right;">Sound: <a id="sound" href="#">on</a></div>
+    <div style="margin:0 auto; width:500px; text-align: right;">
+        Sound: <a id="sound" href="#">on</a><br />
+        Pause: <a id="pause" href="#">off</a>
+    </div>
 </div>
 </body>
 </html>
