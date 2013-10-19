@@ -29,9 +29,9 @@
         }
         .production {
             background-image:url('production.png');
-            width: 10px;
+            width: 29px;
             z-index: 1;
-            height: 10px;
+            height: 29px;
             z-index: 1;
             cursor: pointer;
         }
@@ -164,10 +164,11 @@
                 this.initView(objWidth, objHeight);
                 this.moveIt(x, y);
                 this.direction = "right";
+                this.image = "";
                 this.food = 0;
                 this.producted = 0;
                 this.amount = 100;
-                this.isAgressive = false;
+                this.isAggressive = false;
             }
             function Flower(x,y) {
                 var objHeight = 10, objWidth = 10;
@@ -282,18 +283,15 @@
             };
             Bee.prototype.behaveFindFood = function() {
                 var closestFood = this.getClosestObject(flowers);
-                var color = "blue";
-                this.isAgressive = false;
+                this.isAggressive = false;
                 if (!closestFood.object) {
                     closestFood = this.getClosestObject(bees);
                     if (closestFood.object) {
-                        color = "red";
-                        this.isAgressive = true;
+                        this.isAggressive = true;
                     } else {
                         return false;
                     }
                 }
-                //this.$.css("background", color);
                 var partner = closestFood.object;
                 var ax = partner.x - this.x;
                 var ay = partner.y - this.y;
@@ -334,15 +332,20 @@
             };
             Bee.prototype.feed = function() {
                 var closestBee = this.findIntersected(bees);
-                if (!closestBee || !closestBee.isAgressive) {
+                if (!closestBee || !closestBee.isAggressive) {
                     return false;
                 }
                 closestBee.food += 100;
+                closestBee.isAggressive = false;
                 sounds.play('chaw');
                 this.amount -= 100;
                 return true;
             };
             Bee.prototype.updateAnimation = function() {
+                var prefix = "";
+                if (this.isAggressive) {
+                    prefix = "aggressive_";
+                }
                 if (this.vx > 0.3 && this.vx > this.vy + 0.3) {
                     this.direction = "right";
                 }
@@ -355,7 +358,11 @@
                 if (this.vy < -0.3 && this.vx + 0.3 < this.vy) {
                     this.direction = "up";
                 }
-                this.$.css("background-image", "url('bee_" + this.direction + ".gif')");
+                var image = prefix + "bee_" + this.direction + ".gif";
+                if (this.image != image) {
+                    this.image = image;
+                    this.$.css("background-image", "url('" + image +"')");
+                }
             };
             Flower.prototype.initView = function() {
                 this.$ = $('<div></div>');
@@ -439,9 +446,13 @@
 <body>
 <div id="imagesPreload" style="display: none; visibility: hidden;">
     <img src="bee_right.gif"/>
+    <img src="aggressive_bee_right.gif"/>
     <img src="bee_left.gif"/>
+    <img src="aggressive_bee_left.gif"/>
     <img src="bee_up.gif"/>
+    <img src="aggressive_bee_up.gif"/>
     <img src="bee_down.gif"/>
+    <img src="aggressive_bee_down.gif"/>
     <img src="flower_0.png"/>
     <img src="flower_1.png"/>
     <img src="flower_2.png"/>
@@ -451,7 +462,7 @@
     <div id="box" style="margin: 0 auto; border: 2px solid gray; position: relative; width:500px; height:500px;"></div>
     <div style="margin: 0 auto; text-align: center;" id="info">
         Bees: <span id="objects_cnt"></span><br />
-        Beeance: <span id="money"></span>
+        Balance: <span id="money"></span>
     </div>
     <div id="menu" style="margin: 0 auto; width: 500px;">
         <div id="flower">
