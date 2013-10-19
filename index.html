@@ -35,6 +35,16 @@
             z-index: 1;
             cursor: pointer;
         }
+        .noMoney {
+            font-size: 24px;
+            color: red;
+            font-weight: bold;
+        }
+        .plusMoney {
+            font-size: 24px;
+            color: green;
+            font-weight: bold;
+        }
         #menu > div {
             cursor: pointer;
         }
@@ -63,11 +73,6 @@
 
             var SoundLib = function() {
                 this.sounds = {};
-                var audioElement = document.createElement('audio');
-                audioElement.setAttribute('src', 'chaw.mp3?1');
-                audioElement.setAttribute('type', 'audio/mpeg');
-                this.sounds.chaw = audioElement;
-
                 audioElement = document.createElement('audio');
                 audioElement.setAttribute('src', 'producted.mp3?1');
                 audioElement.setAttribute('type', 'audio/mpeg');
@@ -80,9 +85,20 @@
             };
             var sounds = new SoundLib();
 
+            var specifyMoney = function(isMoney) {
+                if (!isMoney) {
+                    $("#money").addClass("noMoney");
+                } else {
+                    $("#money").addClass("plusMoney");
+                }
+                setTimeout(function() {
+                    $("#money").removeClass("plusMoney");
+                    $("#money").removeClass("noMoney");
+                }, 300);
+            };
+
             $("#box").on("click", "div.production", function(e) {
                 var me = $(this);
-                console.log(me, production);
                 production.forEach(function(el){
                     if (me.is(el.$)) {
                         el.transmit();
@@ -93,18 +109,27 @@
             var mouseActionCreateBee = function(x, y) {
                 if (playerMoney >= beePrice) {
                     playerMoney -= beePrice;
+                    $('#money').text('$' + playerMoney);
                     bees.push(new Bee(x, y));
+                    $('#objects_cnt').text(bees.length);
+                } else {
+                    specifyMoney();
                 }
             };
-            var mouseActionAddflower = function(x, y) {
+            var mouseActionAddFlower = function(x, y) {
                 if (playerMoney >= flowerPrice) {
                     playerMoney -= flowerPrice;
-                    flowers.push(new Flower(x, y));
+                    $('#money').text('$' + playerMoney);
+                    flowers.push(new Flower(x-15, y-15));
+                } else {
+                    specifyMoney(false);
                 }
             };
             function main() {
                 $("#flowerPrice").text('$' + flowerPrice);
                 $("#beePrice").text('$' + beePrice);
+                $('#money').text('$' + playerMoney);
+                $('#objects_cnt').text(bees.length);
                 var box = $("#box");
                 box.width(boxWidth);
                 box.height(boxHeight);
@@ -118,7 +143,7 @@
                     $(this).addClass("active");
                 });
                 $("#flower").click(function() {
-                    mouse.action = mouseActionAddflower;
+                    mouse.action = mouseActionAddFlower;
                 });
                 $("#bee").click(function() {
                     mouse.action = mouseActionCreateBee;
@@ -193,6 +218,7 @@
             };
             Entity.prototype.destroy = function() {
                 this.classArray.splice( $.inArray(this, this.classArray), 1 );
+                $('#objects_cnt').text(bees.length);
                 this.$.remove();
                 delete this;
             };
@@ -337,7 +363,6 @@
                 }
                 closestBee.food += 100;
                 closestBee.isAggressive = false;
-                sounds.play('chaw');
                 this.amount -= 100;
                 return true;
             };
@@ -376,7 +401,6 @@
                     return false;
                 }
                 intersectedObj.food += 10;
-                sounds.play('chaw');
                 this.amount -= 10;
                 if (this.amount < flowerAmount*2/2) {
                     if (this.amount > flowerAmount/3) {
@@ -395,6 +419,8 @@
             };
             Production.prototype.transmit = function() {
                 playerMoney += productionProfit;
+                $('#money').text('$' + playerMoney);
+                specifyMoney(true);
                 this.destroy();
             };
             //main cycle
@@ -431,14 +457,6 @@
                     bee.consumeFood();
                 });
             }, 100);
-            //update info
-            setInterval(function () {
-                if (isPause) {
-                    return;
-                }
-                $('#objects_cnt').text(bees.length);
-                $('#money').text('$' + playerMoney);
-            }, 500);
             main();
         })
     </script>
